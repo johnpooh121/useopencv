@@ -3,6 +3,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.annotation.TargetApi;
 import android.content.pm.PackageManager;
@@ -10,6 +11,9 @@ import android.os.Build;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
@@ -28,12 +32,14 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG = "opencv";
     private Mat matInput;
     private Mat matResult;
-
+    long[] mats = new long[3];
+    boolean isfirst = true;
+    TextView tv;
     private CameraBridgeViewBase mOpenCvCameraView;
 
     public native void ConvertRGBtoGray(long matAddrInput, long matAddrResult);
-
-
+    public native int[] returnarray(int x,int y,int z);
+    public native double[] returnxyz(long matAddrInput1,long matAddrInput2,long matAddrInput3);
     static {
         System.loadLibrary("opencv_java4");
         System.loadLibrary("native-lib");
@@ -73,6 +79,12 @@ public class MainActivity extends AppCompatActivity
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setCameraIndex(0); // front-camera(1),  back-camera(0)
+
+        int x=1,y=2,z=3;
+        int[] arr = returnarray(x,y,z);
+        Toast.makeText(this,"x "+x+" y "+y+" z "+z,Toast.LENGTH_SHORT).show();
+        tv=findViewById(R.id.sample_text);
+        tv.setBackgroundColor(Color.parseColor("#FF0000"));
     }
 
     @Override
@@ -123,9 +135,17 @@ public class MainActivity extends AppCompatActivity
         if ( matResult == null )
 
             matResult = new Mat(matInput.rows(), matInput.cols(), matInput.type());
-
         ConvertRGBtoGray(matInput.getNativeObjAddr(), matResult.getNativeObjAddr());
-
+        if(isfirst){
+            isfirst=false;
+            mats[0]=mats[1]=mats[2]=matInput.getNativeObjAddr();
+        }
+        for(int i=0;i<2;i++)mats[i]=mats[i+1];
+        mats[2]=matInput.getNativeObjAddr();
+        double x,y,z;
+        double[] res=returnxyz(mats[0],mats[1],mats[2]);
+        x=res[0];y=res[1];z=res[2];
+        Log.d("좌표","x: "+x+" y: "+y+" z: "+z);
         return matResult;
     }
 
